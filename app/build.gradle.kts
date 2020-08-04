@@ -14,7 +14,7 @@ android {
         applicationId = "juniojsv.minimum"
         versionCode = 14
         versionName = "1.2.3"
-        setMinSdkVersion(21)
+        setMinSdkVersion(22)
         targetSdkVersion(29)
         resConfigs("pt-rBr")
         setProperty("archivesBaseName", "$applicationId-v$versionName")
@@ -35,4 +35,5 @@ android {
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation("androidx.preference:preference-ktx:1.1.1")
+    implementation("com.robotemi:sdk:0.10.70")
 }
