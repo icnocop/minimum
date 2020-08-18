@@ -68,3 +68,47 @@ jobs:
         path: app/build/outputs/apk/**/*.apk
         # The desired behavior if no files are found using the provided path.
         if-no-files-found: error
+        
+    - name: Get version name
+      run: |
+        export VERSION_NAME=`egrep '[[:blank:]]*versionName[[:blank:]]?=[[:blank:]]?\"((\w|\.)+)\"'  app/build.gradle.kts | awk '{print $3}'| sed s/\"//g`
+        echo "::set-env name=VERSION_NAME::$VERSION_NAME"
+        export VERSION_CODE=`egrep '[[:blank:]]*versionCode[[:blank:]]?=[[:blank:]]?([0-9]+)'  app/build.gradle.kts | awk '{print $3}'`
+        echo "::set-env name=VERSION_CODE::$VERSION_CODE"
+
+    - name: get commit message
+      run: |
+           echo ::set-env name=commitmsg::$(git log --format=%B -n 1 ${{ github.event.after }})
+    - name: show commit message
+      run : echo $commitmsg
+
+    - name: Create Release
+      id: create_release
+      if: ${{ github.event_name != 'pull_request' && contains(env.commitmsg , '[Release]') }}
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        # The name of the tag. This should come from the webhook payload, `github.GITHUB_REF` when a user pushes a new tag
+        tag_name: ${{ github.ref }}
+        # The name of the release. For example, `Release v1.0.1`
+        release_name: ${{ env.VERSION_NAME }}
+        # `true` to create a draft (unpublished) release, `false` to create a published one. Default: `false`
+        draft: true
+        # `true` to identify the release as a prerelease. `false` to identify the release as a full release. Default: `false`
+        prerelease: false
+        
+    - name: Upload Release Asset
+      if: ${{ github.event_name != 'pull_request' && contains(env.commitmsg , '[Release]') }}
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        # The URL for uploading assets to the release
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        # The path to the asset you want to upload
+        asset_path: app/build/outputs/apk/release/juniojsv.minimum-v${{ env.VERSION_NAME }}-release-unsigned-signed.apk
+        # The name of the asset you want to upload
+        asset_name: juniojsv.minimum-v${{ env.VERSION_NAME }}.apk
+        # The content-type of the asset you want to upload. See the supported Media Types here: https://www.iana.org/assignments/media-types/media-types.xhtml for more information
+        asset_content_type: application/vnd.android.package-archive
